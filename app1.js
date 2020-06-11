@@ -2,10 +2,7 @@ var http = require("http");
 
 var n = 1;
 http.createServer(function (request, response) {
-
    response.writeHead(200, {'Content-Type': 'text/plain'});
-
-   // Send the response body as "Hello World"
    response.end(n.toString());
    n++;
 }).listen(process.env.APP_LISTEN_PORT);
