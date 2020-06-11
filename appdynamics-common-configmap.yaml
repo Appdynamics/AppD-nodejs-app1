@@ -1,0 +1,21 @@
+# Environment variables common across all AppDynamics Agents -  Clear Text
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: appdynamics-common
+data:
+  APPD_DIR: "/appdynamics"
+  APPD_ES_HOST: ""
+  APPD_ES_PORT: "9080"
+  APPD_ES_SSL: "false"
+  APPD_EVENT_ACCOUNT_NAME: "XXX"
+  APPDYNAMICS_AGENT_APPLICATION_NAME: "DDR_A_NJS1"
+  APPDYNAMICS_AGENT_TIER_NAME: "DDR_T_NJS1"
+  APPDYNAMICS_AGENT_NODE_NAME: "DDR_N_NJS1"
+  APPDYNAMICS_CONTROLLER_HOST_NAME: "controller2-2040nosshc-ewfoywum.appd-sales.com"
+  APPDYNAMICS_CONTROLLER_PORT: "8090"
+  APPDYNAMICS_CONTROLLER_SSL_ENABLED: "FALSE"
+  APP_ENTRY_POINT: "./app1"
+  APP_LISTEN_PORT: "8081"

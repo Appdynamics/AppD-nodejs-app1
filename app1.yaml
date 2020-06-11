@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app1
+spec:
+  selector:
+    matchLabels:
+      name: app1
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: app1
+    spec:
+      containers:
+        - name: app1
+          image: localhost:5555/nodejs1
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 8081
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app1
+spec:
+  selector:
+    name: app1
+  ports:
+  - name: "8081"
+    port: 8081
+    targetPort: 8081
+  clusterIP: None

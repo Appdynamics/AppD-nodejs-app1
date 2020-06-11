@@ -1,0 +1,12 @@
+{
+  "name": "appdynamics test app1",
+  "version": "1.0.0",
+  "description": "Node.js on Docker",
+  "author": "David Ryder",
+  "main": "app1.js",
+  "scripts": {
+    "start": "node app1.js"
+  },
+  "dependencies": {
+  }
+}
