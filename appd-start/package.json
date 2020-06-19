@@ -1,0 +1,15 @@
+{
+  "name": "appd-start",
+  "version": "1.0.0",
+  "main": "appd-start.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "David Ryder",
+  "license": "ISC",
+  "dependencies": {
+    "install": "^0.13.0"
+  },
+  "devDependencies": {},
+  "description": "AppDynamics Agent startup script"
+}
