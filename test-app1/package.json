@@ -1,0 +1,15 @@
+{
+  "name": "test-app1",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "David Ryder",
+  "license": "ISC",
+  "dependencies": {
+    "appdynamics": "file:.."
+  },
+  "devDependencies": {},
+  "description": "Test Application 1"
+}
