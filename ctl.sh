@@ -1,7 +1,11 @@
 #!/bin/bash
 #
 #
+CMD=${1:-"help"}
+CMD_ARGS_LEN=${#}
 CMDS_LIST=${@:-"help"} # All Commands
+
+
 
 # Check docker: Linux or Ubuntu snap
 DOCKER_CMD=`which docker`
@@ -18,7 +22,13 @@ KUBECTL_CMD=${KUBECTL_CMD:-"/snap/bin/microk8s.kubectl"}
 echo "Using: $KUBECTL_CMD"
 if [ -d $KUBECTL_CMD ]; then
     echo "Kubectl is missing: ($KUBECTL_CMD)"
-    exit 1
+fi
+
+# envvars
+if [ -f envvars.sh ]; then
+  . envvars.sh
+else
+  echo "Warning: envvars.sh not found"
 fi
 
 _config() {
@@ -109,9 +119,9 @@ _docker_get_container_id() {
 }
 
 # Execute command
-for CMD in ${CMDS_LIST}; do
+#for CMD in ${CMDS_LIST}; do
 case "$CMD" in
-  configure)
+  appd-cluster-agent)
     $KUBECTL_CMD delete configmap appdynamics-common
     $KUBECTL_CMD delete secret appdynamics-secrets
     $KUBECTL_CMD delete configmap appd-start-js
@@ -133,15 +143,39 @@ case "$CMD" in
     $KUBECTL_CMD get configmaps
     $KUBECTL_CMD get secrets
     ;;
-  build)
+  configure)
+    # Downloads required file before bulding containers
+    DOWNLOADS_DIR="downloads/"
+    mkdir -p $DOWNLOADS_DIR
+    curl https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh -o $DOWNLOADS_DIR/nvm-v0-33-11-install.sh
+    ;;
+  build) # Expects Argument APP_ID
+    DOCKER_TAG_NAME=${2:-"DOCKER_TAG_MISSING"}
+    DOCKERFILE="./$DOCKERFILES_DIR/$DOCKER_TAG_NAME.Dockerfile"
+    echo "Building $DOCKERFILE Tag: $DOCKER_TAG_NAME"
+    $DOCKER_CMD build \
+      --build-arg USER=$USER \
+      --build-arg HOME_DIR=$HOME_DIR \
+      -t $DOCKER_TAG_NAME \
+      --file $DOCKERFILE .
+  ;;
+  build-orig)
     docker build -t $DOCKER_TAG_NAME .
+  ;;
+  docker-install)
+    _DockerCE_Install
+    ;;
+  docker-delete-all)
+    docker rmi $(docker images -q) -f
+    docker system prune --all --force
     ;;
   push)
     docker tag  $DOCKER_TAG_NAME  $DOCKER_REPOSITORY_TAG_NAME
     docker push $DOCKER_REPOSITORY_TAG_NAME
     ;;
   docker-start)
-    docker run -d --rm --name $CONTAINER_NAME \
+    DOCKER_TAG_NAME=${2:-"DOCKER TAG MISSING"}
+    docker run -d --rm --name $DOCKER_TAG_NAME\
       -p $APP_LISTEN_PORT:$APP_LISTEN_PORT \
       -e APP_LISTEN_PORT=$APP_LISTEN_PORT \
       -e APPDYNAMICS_CONTROLLER_HOST_NAME=$APPDYNAMICS_CONTROLLER_HOST_NAME \
@@ -161,6 +195,7 @@ case "$CMD" in
     docker stop $ID
     ;;
   docker-bash)
+    CONTAINER_NAME=${2:-"DOCKER CONTAINER NAME MISSING"}
     ID=$(_docker_get_container_id $CONTAINER_NAME )
     docker exec -it $ID bash
     ;;
@@ -205,9 +240,6 @@ case "$CMD" in
     #keytool -import -alias rootCA -file $CERT_PEM_FILE -keystore $KEYSTORE_FILE -storepass $KEYSTORE_PASSWORD
     echo "Created $CERT_PEM_FILE"
     #echo "Created $KEYSTORE_FILE with password $KEYSTORE_PASSWORD"
-    ;;
-  docker-install)
-    _DockerCE_Install
     ;;
   k8s-install)
     _MicroK8s_Install
@@ -260,10 +292,6 @@ case "$CMD" in
   ns)
     $KUBECTL_CMD get all --all-namespaces
     ;;
-  del-force)
-    docker rmi $(docker images -q) -f
-    docker system prune --all --force
-    ;;
   k8s-metrics)
     microk8s.enable get --raw /apis/metrics.k8s.io/v1beta1/pods
     ;;
@@ -292,4 +320,4 @@ case "$CMD" in
     echo "Not Found " "$@"
     ;;
 esac
-done
+#done
