@@ -59,11 +59,6 @@ _validateEnvironmentVars() {
   [ "$ERROR" == "1" ] && { echo "Exiting"; exit 1; }
 }
 
-_Xdocker_get_container_id() {
-  CONTAINER_NAME=$1
-  echo `docker inspect --format='{{ .Id }}' $CONTAINER_NAME`
-}
-
 # Execute command
 #for CMD in ${CMDS_LIST}; do
 case "$CMD" in
@@ -83,6 +78,12 @@ case "$CMD" in
       -t $DOCKER_TAG_NAME \
       --file $DOCKERFILE .
   ;;
+  build-all)
+  BUILD_LIST=("test-app1" "test-app2" "test-app3" "test-app4" "test-app-backend")
+  for APP_NAME in "${BUILD_LIST[@]}"; do
+    ./ctl.sh build $APP_NAME
+  done
+  ;;
   build-orig)
     docker build -t $DOCKER_TAG_NAME .
   ;;
@@ -98,14 +99,16 @@ case "$CMD" in
     docker push $DOCKER_REPOSITORY_TAG_NAME
     ;;
   run)
-  echo "R"
     DOCKER_TAG_NAME=${2:-""}
     DOCKER_RUN_DETACHED=${3:-"--detach"}
-    _validateEnvironmentVars "docker run" "DOCKER_TAG_NAME" "DOCKER_RUN_DETACHED" "APP_LISTEN_PORT" "APPDYNAMICS_CONTROLLER_HOST_NAME" \
-      "APPDYNAMICS_CONTROLLER_PORT" "APPDYNAMICS_CONTROLLER_SSL_ENABLED" "APPDYNAMICS_AGENT_ACCOUNT_NAME" "APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY" \
+    _validateEnvironmentVars "docker run" "DOCKER_TAG_NAME" "DOCKER_RUN_DETACHED" "APP_LISTEN_PORT" "APP_LATENCY" \
+      "APPDYNAMICS_CONTROLLER_HOST_NAME" "APPDYNAMICS_CONTROLLER_PORT" "APPDYNAMICS_CONTROLLER_SSL_ENABLED" \
+      "APPDYNAMICS_AGENT_ACCOUNT_NAME" "APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY" \
       "APPDYNAMICS_AGENT_APPLICATION_NAME" "APPDYNAMICS_AGENT_TIER_NAME" "APPDYNAMICS_AGENT_NODE_NAME"
     if [ $DOCKER_TAG_NAME == "test-app-backend" ]; then
         APP_LISTEN_PORT="5646"
+        APPDYNAMICS_AGENT_TIER_NAME="DDR_TIER_T1_B1"
+        APPDYNAMICS_AGENT_NODE_NAME="DDR_NODE_N1_B1"
     elif [ $DOCKER_TAG_NAME == "postgres" ]; then
         EXTRA_ARGS="-p 5432:5432"
     elif [ $DOCKER_TAG_NAME$ID == "mysql0" ]; then
@@ -116,6 +119,7 @@ case "$CMD" in
       -p $APP_LISTEN_PORT:$APP_LISTEN_PORT \
       --network $DOCKER_NETWORK_NAME \
       -e APP_LISTEN_PORT=$APP_LISTEN_PORT \
+      -e APP_LATENCY=$APP_LATENCY \
       -e APPDYNAMICS_CONTROLLER_HOST_NAME=$APPDYNAMICS_CONTROLLER_HOST_NAME \
       -e APPDYNAMICS_CONTROLLER_PORT=$APPDYNAMICS_CONTROLLER_PORT \
       -e APPDYNAMICS_CONTROLLER_SSL_ENABLED=$APPDYNAMICS_CONTROLLER_SSL_ENABLED \
@@ -136,8 +140,15 @@ case "$CMD" in
     ;;
   restart)
     DOCKER_TAG_NAME=${2:-""}
-    ./ctl.sh docker-stop $DOCKER_TAG_NAME
-    ./ctl.sh docker-run $DOCKER_TAG_NAME
+    ./ctl.sh stop $DOCKER_TAG_NAME
+    ./ctl.sh run $DOCKER_TAG_NAME
+    ;;
+  test-curl)
+    curl -X PUT \
+      -H "Content-Type: application/json" \
+      -H "singularityheader: appId=20&ctrlguid=1604867626&acctguid=7950e532-228a-4419-8dfc-b14ae6c7072c&ts=1604869901488&btid=209&guid=a46fc4bb-8788-4b43-8a4e-3eaba75a4994&exitguid=1&unresolvedexitid=11&cidfrom=58&etypeorder=HTTP&cidto=60" \
+      -d '{"id":12294}' \
+      http://localhost:5646/api/test
     ;;
   bash)
     CONTAINER_NAME=${2:-"DOCKER CONTAINER NAME MISSING"}
@@ -149,7 +160,7 @@ case "$CMD" in
     ;;
   load-gen1)
     count=5000
-    interval=5
+    interval=${2:-"5"}
     HOST="http://localhost"
     PORT="$APP_LISTEN_PORT"
     URI="/"
@@ -161,7 +172,7 @@ case "$CMD" in
     	sleep $interval
     done
     ;;
-  load-gen2)
+  load-gen-params)
     count=5000
     interval=5
     HOST="http://localhost"
@@ -179,40 +190,63 @@ case "$CMD" in
     done
     ;;
     load-gen-single)
-      count=5000
-      interval=15
+      DURATION_SEC=${2:-"3600"}
+      INTERVAL_SEC=${3:-"60"}
+      START_TIME=$(date +%s)
+      END_TIME=$(( START_TIME + DURATION_SEC ))
       HOST="http://localhost"
       PORT="$APP_LISTEN_PORT"
       PARAM_P1=1100
       PARAM_P2=1
       PARAM_P3=2
       URI="/"
-      for i in $(seq $count )
-      do
+      while (true); do
         now=`date `
         echo "$started - $now - Iteration "$i
         curl -o /dev/null -s -w "%{time_total}\n" $HOST:$PORT$URI
-      	sleep $interval
+        TIME_NOW=$(date +%s)
+        if [ "$TIME_NOW" -gt "$END_TIME" ]; then
+          echo "Stopping"
+          break;
+        else
+          sleep $INTERVAL_SEC
+        fi
       done
       ;;
     load-gen-concurrent)
-      count=5000
-      interval=60
+      DURATION_SEC=${2:-"3600"}
+      INTERVAL_SEC=${3:-"60"}
+      START_TIME=$(date +%s)
+      END_TIME=$(( START_TIME + DURATION_SEC ))
       HOST="http://localhost"
       PORT="$APP_LISTEN_PORT"
       PARAM_P1=1100
       PARAM_P2=1
       PARAM_P3=2
       URI="/"
-      for i in $(seq $count )
-      do
+      while (true); do
         now=`date `
         echo "$started - $now - Iteration "$i
         for ii in 1 2 3 4 5; do
           echo $ii
           curl -o /dev/null -s -w "%{time_total}\n" $HOST:$PORT$URI &
         done
-      	sleep $interval
+        TIME_NOW=$(date +%s)
+        if [ "$TIME_NOW" -gt "$END_TIME" ]; then
+          echo "Stopping"
+          break;
+        else
+          sleep $INTERVAL_SEC
+        fi
+      done
+      ;;
+  load-gen-sequence)
+      DURATION_SEC=${2:-"300"}
+      echo "DURATION_SEC $DURATION_SEC"
+      while (true); do
+        ./ctl.sh load-gen-single        $DURATION_SEC 5
+        ./ctl.sh load-gen-concurrent    $DURATION_SEC 30
+        sleep $DURATION_SEC # No load
       done
       ;;
   load-gen-random)
