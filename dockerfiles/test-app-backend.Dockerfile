@@ -1,8 +1,7 @@
 from node:12
 
 # Install Main application
-ENV APP_NAME="test-app4"
-COPY backend.js /
+ENV APP_NAME="backend"
 COPY ${APP_NAME} ${APP_NAME}/
 COPY downloads/nvm-v0-33-11-install.sh /
 RUN npm install --prefix ${APP_NAME} && \
@@ -21,5 +20,6 @@ RUN npm install appdynamics@next && \
 EXPOSE ${APP_LISTEN_PORT}
 
 # Start AppDynamics and then the main application test-app1
-ENTRYPOINT  node backend.js
+#ENTRYPOINT  node backend.js
+ENTRYPOINT  node appd-start ${APP_NAME}
 #CMD [ "sleep", "3600" ]
