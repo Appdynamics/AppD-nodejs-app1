@@ -1,7 +1,7 @@
 from node:12
 
 # Install Main application
-ENV APP_NAME="backend"
+ENV APP_NAME="backend-app"
 COPY ${APP_NAME} ${APP_NAME}/
 COPY downloads/nvm-v0-33-11-install.sh /
 RUN npm install --prefix ${APP_NAME} && \

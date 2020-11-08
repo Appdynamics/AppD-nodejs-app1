@@ -1,4 +1,5 @@
 export APP_LISTEN_PORT=8081
+export APP_LATENCY=950
 
 export USER="ddr"
 export HOME_DIR="/home/$USER"
