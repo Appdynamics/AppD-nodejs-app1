@@ -6,7 +6,7 @@ var startTimeSec = Math.round(Date.now() / 1000);
 http.createServer(function (request, response) {
   const id = 12294;
   var t1 = Math.round(Date.now() / 1000) - startTimeSec;
-  req.put('http://test-app-backend:5646/api/test', {json:{id: id}}, function(err, resp, body) {
+  req.put('http://backend-app:5646/api/test', {json:{id: id}}, function(err, resp, body) {
     var t2 = Math.round(Date.now() / 1000) - startTimeSec;
     var d1 = t2 - t1;
     console.log(` PUT n: ${n} t1: ${t1} t2: ${t2} diff: ${d1}`)

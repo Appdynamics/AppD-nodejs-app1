@@ -4,7 +4,16 @@ var http = require("http");
 var n = 1;
 var appLatency = Number(process.env.APP_LATENCY);
 
-function latency(N,r){ for(let i=2,c,x=r[1];i<N;i++,x=r[i-1]) { do { c = 0, x++; for(let k=0;k<i;k++) for(let n=0;n<k;n++) c=r[n]+r[k]==x?c+1:c } while(c!=1) r[i]=x; } return r[N-1] };
+function latency(N,r) {
+  for (let i=2,c,x=r[1];i<N;i++,x=r[i-1]) {
+    do {
+        c = 0, x++;
+        for(let k=0;k<i;k++)
+          for(let n=0;n<k;n++)
+            c=r[n]+r[k]==x?c+1:c
+       } while(c!=1) r[i]=x; }
+  return r[N-1]
+};
 
 http.createServer(function (request, response) {
   console.log( latency(appLatency,[1,2]) );
