@@ -1,10 +1,18 @@
 console.log("Starting: test-app2");
 const http = require("http");
 const url = require('url');
+//const sleep = require('sleep');
 
 var n = 1;
 
 function latency(N,r){ for(let i=2,c,x=r[1];i<N;i++,x=r[i-1]) { do { c = 0, x++; for(let k=0;k<i;k++) for(let n=0;n<k;n++) c=r[n]+r[k]==x?c+1:c } while(c!=1) r[i]=x; } return r[N-1] }
+
+function msleep(n) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n);
+}
+function sleep(n) {
+  msleep(n*1000);
+}
 
 function httpHandler( request, response) {
   const parsedUrl = url.parse(request.url, true);
@@ -18,6 +26,12 @@ function httpHandler( request, response) {
    } else if ( parsedUrl.pathname === '/slow' ){
        response.writeHead(200, {'Content-type':'text/plain'});
        console.log( latency(1000,[1,2]) );
+
+  } else if ( parsedUrl.pathname === '/sleep' ){
+      const delay = Number( parsedUrl.query.delay );
+      console.log(delay);
+      response.writeHead(200, {'Content-type':'text/plain'});
+      msleep(delay);
 
    } else if ( parsedUrl.pathname === '/slow2' ){
       const p1 = Number( parsedUrl.query.p1 );

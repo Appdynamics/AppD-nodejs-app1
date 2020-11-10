@@ -192,14 +192,11 @@ case "$CMD" in
     load-gen-single)
       DURATION_SEC=${2:-"3600"}
       INTERVAL_SEC=${3:-"60"}
+      URI=${4:-"/"}
       START_TIME=$(date +%s)
       END_TIME=$(( START_TIME + DURATION_SEC ))
       HOST="http://localhost"
       PORT="$APP_LISTEN_PORT"
-      PARAM_P1=1100
-      PARAM_P2=1
-      PARAM_P3=2
-      URI="/"
       while (true); do
         now=`date `
         echo "$started - $now - Iteration "$i
