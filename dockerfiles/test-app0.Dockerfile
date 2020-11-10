@@ -1,7 +1,7 @@
 from node:14
 
 # Install Main application
-ENV APP_NAME="test-app1"
+ENV APP_NAME="test-app0"
 COPY ${APP_NAME} ${APP_NAME}/
 COPY downloads/nvm-v0-33-11-install.sh /
 
