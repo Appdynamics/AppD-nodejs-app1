@@ -152,7 +152,7 @@ case "$CMD" in
     ;;
   bash)
     CONTAINER_NAME=${2:-"DOCKER CONTAINER NAME MISSING"}
-    ID=$(_docker_get_container_id $CONTAINER_NAME )
+    ID=$(_getDockerContainerId $CONTAINER_NAME )
     docker exec -it $ID bash
     ;;
   port-forward)
@@ -206,7 +206,7 @@ case "$CMD" in
         curl -o /dev/null -s -w "%{time_total}\n" $HOST:$PORT$URI
         TIME_NOW=$(date +%s)
         if [ "$TIME_NOW" -gt "$END_TIME" ]; then
-          echo "Stopping"
+          echo "Stopping $(date)"
           break;
         else
           sleep $INTERVAL_SEC
@@ -216,24 +216,23 @@ case "$CMD" in
     load-gen-concurrent)
       DURATION_SEC=${2:-"3600"}
       INTERVAL_SEC=${3:-"60"}
+      CONCURRENCY_N=${4:-"5"}
+      URI=${5:-"/"}
       START_TIME=$(date +%s)
       END_TIME=$(( START_TIME + DURATION_SEC ))
       HOST="http://localhost"
       PORT="$APP_LISTEN_PORT"
-      PARAM_P1=1100
-      PARAM_P2=1
-      PARAM_P3=2
-      URI="/"
+      N_REQUESTS=0
       while (true); do
         now=`date `
-        echo "$started - $now - Iteration "$i
-        for ii in 1 2 3 4 5; do
-          echo $ii
-          curl -o /dev/null -s -w "%{time_total}\n" $HOST:$PORT$URI &
+        echo "$started - $now - Iteration $i Requests $N_REQUESTS Concurrency $CONCURRENCY_N - $URI"
+        for ii in $(seq 1 $CONCURRENCY_N); do
+          echo $ii $(curl -o /dev/null -s -w "%{time_total}\n" $HOST:$PORT$URI) &
+          N_REQUESTS=$(( N_REQUESTS + 1))
         done
         TIME_NOW=$(date +%s)
         if [ "$TIME_NOW" -gt "$END_TIME" ]; then
-          echo "Stopping"
+          echo "Stopping $(date)"
           break;
         else
           sleep $INTERVAL_SEC
