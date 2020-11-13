@@ -79,7 +79,7 @@ case "$CMD" in
       --file $DOCKERFILE .
   ;;
   build-all)
-  BUILD_LIST=("test-app1" "test-app2" "test-app3" "test-app4" "test-app-backend")
+  BUILD_LIST=("test-app1" "test-app2" "test-app3" "test-app4" "backend-app")
   for APP_NAME in "${BUILD_LIST[@]}"; do
     ./ctl.sh build $APP_NAME
   done
@@ -132,11 +132,17 @@ case "$CMD" in
       $DOCKER_TAG_NAME
       _dockerWaitUntilRunning $DOCKER_TAG_NAME
     ;;
+  test)
+    CONTAINER_NAME=${2:-"DOCKER CONTAINER NAME MISSING"}
+    echo "Stopping $CONTAINER_NAME $ID"
+    _dockerTest $CONTAINER_NAME
+    #_dockerWaitUntilStopped $CONTAINER_NAME
+    ;;
   stop)
     CONTAINER_NAME=${2:-"DOCKER CONTAINER NAME MISSING"}
     echo "Stopping $CONTAINER_NAME $ID"
-    _dockerStop $CONTAINER_NAME
-    _dockerWaitUntilStopped $CONTAINER_NAME
+     _dockerStopContainers $CONTAINER_NAME
+     _dockerWaitForContainersToStop $CONTAINER_NAME
     ;;
   restart)
     DOCKER_TAG_NAME=${2:-""}

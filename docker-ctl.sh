@@ -52,12 +52,46 @@ _dockerRun() {
 
 #   | jq --arg SEARCH_STR "$IMAGE_NAME" 'select(.Image==$SEARCH_STR)' \
 _getDockerContainerId() {
+  # Return first matching container id
   IMAGE_NAME=${1:-"Image Name Missing"}
   DOCKER_ID=`docker container ps --format '{{json .}}' \
     | jq --arg SEARCH_STR "$IMAGE_NAME" 'select(.Names | contains($SEARCH_STR))' \
     | jq -s '[.[] | {ID, Names, Image } ][0]' \
     | jq -r .ID`
     echo $DOCKER_ID
+}
+
+_getDockerContainerIds() {
+  # Return list of container ids
+  IMAGE_NAME=${1:-"Image Name Missing"}
+  DOCKER_ID=`docker container ps --format '{{json .}}' \
+    | jq --arg SEARCH_STR "$IMAGE_NAME" 'select(.Names | contains($SEARCH_STR))' \
+    | jq -s '[.[] | {ID, Names, Image } ]'`
+    echo $DOCKER_ID
+}
+
+_dockerStopContainers() {
+  DOCKER_TAG_NAME=$1
+  CONTAINER_ID_LIST=`_getDockerContainerIds $DOCKER_TAG_NAME`
+  echo "[]$CONTAINER_ID_LIST[]"
+  echo $CONTAINER_ID_LIST | jq -c '.[]' | while read ITEM; do
+    ID=`echo $ITEM | jq -r .ID`
+    NAME=`echo $ITEM | jq -r .Names`
+    echo "Stopping $ID $NAME"
+    docker stop ${ID} &
+  done
+}
+
+_dockerWaitForContainersToStop() {
+  DOCKER_TAG_NAME=$1
+  CONTAINER_ID_LIST=`_getDockerContainerIds $DOCKER_TAG_NAME`
+  while [ "$CONTAINER_ID_LIST" != "[]" ];
+  do
+      RUNNING_CONTAINERS=`echo '[ { "ID": "14c97bf487c8", "Names": "test-app1", "Image": "test-app1" }, { "ID": "f6182c9a20c5", "Names": "backend-app", "Image": "backend-app" } ]' | jq '.[] | .Names'`
+      echo "Waiting for containers to stop: $RUNNING_CONTAINERS"
+      sleep 1
+      CONTAINER_ID_LIST=`_getDockerContainerIds $DOCKER_TAG_NAME`
+  done
 }
 
 _getDockerContainerIdImage() {
@@ -135,6 +169,8 @@ _dockerStop() {
     echo "Container ${DOCKER_TAG_NAME} is not running"
   fi
 }
+
+
 
 _dockerDeleteImage() {
   IMAGE_ID=`_getDockerImageId ${DOCKER_TAG_NAME}`
